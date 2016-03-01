@@ -1,24 +1,33 @@
+Say:
+    m:     number of random number generations
+    n:     number of records (>= 1)
+    R:     array of n records {r_1, ..., r_n}
+    W:     array of n record weights {w_1, ..., w_n}
+    W_cum: array of cumulated weights {w_1, w_1 + w_2, ..., sum_i=1...n(w_i)}
+    F:     array of n record frequencies {f_1, ..., f_n}, cleared to all 0's at start
+
 Pseudo-code
 -----------
-read from file and prepare the arrays of n elements R, W, and F (the latter cleared to all 0's)
-set sumOfWeights = 0
-set j = 0
-loop until j < n:
-    set sumOfWeights = sumOfWeights + W[j]
-    set j = j + 1
+read from file and prepare the arrays of n elements R, W, W_cum, and F
+set sumOfWeights = W_cum[n - 1]
 set i = 0
-loop until i < iterations:
+loop until i < m:
     generate a random r between 1 and sumOfWeights
     set pick = 0
-    set j = 0
+    set j_min = 0
+    set j_max = n - 1
+    set j_mid = 0 // if n = 0
     loop until pick = 0:
-        if r <= W[j], then:
-            set F[j] = F[j] + 1
-            set pick = 1
+        if (j_min <= j_max), then:
+            set j_mid = (j_min + j_max) / 2
+            if r <= W_cum[j_mid], then:
+                set j_max = j_mid - 1
+            else:
+                set j_min = j_mid + 1
         else:
-            set r = r - W[j]
-            set j = j + 1
+            set F[j_mid] = F[j_mid] + 1
+            set pick = 1
     set i = i + 1
 set j = 0
 loop until j < n:
-    print to stdout "record <R[j]>, prob. <100 * W[j] / sumOfWeights> %, freq. <100 * F[j] / iterations> %"
+    print to stdout "record <R[j]>, prob. <100 * W[j] / sumOfWeights> %, freq. <100 * F[j] / m> %"
