@@ -1,0 +1,25 @@
+Problem definition
+------------------
+From the set of records R = {r_1, r_2, ..., r_n} and their respective weights W = {w_1, w_2, ..., w_n}
+pick a random record, such that probability of picking a record is proportional to its weight.
+That is to say, for the i-th record (i in [1, n]), P(i) = w_i / sum (w_1, ..., w_n).
+
+Problem analysis
+----------------
+Let us assume that w_i is a positive integer, for each i in [1, n].
+Let us define the set R_ext = {r_i_j, i in [1, n], j in [1, w_i]}, including all the records of the set R,
+each one repeated a number of times equal to the record's associated weight.
+If one picks a random record in R_ext, the probability of picking a copy r_i_j of the record r_i in R
+is exactly P(i) (from now on, i and j range according to the definition of R_ext).
+In facts, P(i, j) = P{picking the j-th copy of the record r_i} = 1 / degree(R_ext) =
+1 / sum(w_1, ..., w_n) and P(i) = P{picking a copy of the record r_i} = sum(P(i, 1), ..., P(i, w_i)) =
+w_i / sum(w_1, ..., w_n).
+Hence, a straightforward solution of the problem would be creating the set R_ext, generating a random number
+r in [1, degree(R_ext)] and picking the r-th record in R_ext, no matter the order of the records in R_ext.
+A possible improvement of the mentioned solution looks at reducing the memory allocated for the records.
+First, the sets R and W would replace the set R_ext. Then, given a randomly generated number r in
+[1, sum(w_1, ..., w_n)], it would be picked the i-th record in R, such that either i = 1, if r <= w_1, 
+or i > 1, if sum(w_1, ..., w_(i-1)) < r <= sum(w_1, ..., w_i), which can be rewritten as
+0 < r - sum(w_1, ..., w_(i-1)) <= w_i. The example below shows clearly that the latter is actually an
+improvement of the former solution:
+R = {a, b, c}, W = {2, 4, 4}, R_ext = {a, a, b, b, b, b, c, c, c, c}, r = 7 (index in R_ext), i = 3 (index in R).

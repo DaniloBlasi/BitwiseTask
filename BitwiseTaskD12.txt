@@ -1,0 +1,24 @@
+Pseudo-code
+-----------
+read from file and prepare the arrays of n elements R, W, and F (the latter cleared to all 0's)
+set sumOfWeights = 0
+set j = 0
+loop until j < n:
+    set sumOfWeights = sumOfWeights + W[j]
+    set j = j + 1
+set i = 0
+loop until i < iterations:
+    generate a random r between 1 and sumOfWeights
+    set pick = 0
+    set j = 0
+    loop until pick = 0:
+        if r <= W[j], then:
+            set F[j] = F[j] + 1
+            set pick = 1
+        else:
+            set r = r - W[j]
+            set j = j + 1
+    set i = i + 1
+set j = 0
+loop until j < n:
+    print to stdout "record <R[j]>, prob. <100 * W[j] / sumOfWeights> %, freq. <100 * F[j] / iterations> %"

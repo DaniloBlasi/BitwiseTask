@@ -1,0 +1,28 @@
+Base-line plan
+--------------
+Sub-Tasks
+Nr. Description                             Expected results                            Estimated time [hours]
+--- -------------------------------------   -----------------------------------------   ----------------------
+1   Analysis of the problem,                D1.1 Description of the line of reasoning   3
+    definition of the solution              D1.2 Pseudo-code                            1
+2   Learning of GitHub                                                                  2
+3   Setup of the development environment:   
+    Cygwin + gcc, GitHub                    D3.1 Commit of this plan file               8
+4   Code implementation and verification    D4.1 Commit of main.c, Makefile,
+                                                 and some input .txt files              8
+5   Reporting                               D5.1 Updates of this file (*_r#.txt)
+                                                 with notification of deviations
+                                                 from the plan, if occurring            0.5 for each update
+
+Notes:
+- Each sub-task starts after the end of the previous one, according to the numbering order;
+  only the sub-task 5 can be performed at any time
+- It is estimated to work (in spare time) min. 1, max. 2, avg. 1.5 hours per day
+- One day per week is not counted (likely Sunday)
+
+In summary, if there are no deviations from the plan above,
+the total estimated time to complete the task is 22 hours, or roughly 15 days on average
+(min. 11, max. 22 days).
+
+Start date: Feb 29th, 2016
+End date:   Mar 16th, 2016
