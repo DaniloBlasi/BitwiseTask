@@ -8,6 +8,16 @@
 #define MAX_NUMBER_OF_RECORDS (20)
 #define MAX_RECORD_LABEL_SIZE (10)
 
+#ifdef DEBUG
+    #define ASSERT(COND)\
+        if(!(COND)) {\
+            printf("Condition '" #COND "' is not met at line %d.\n", __LINE__);\
+            while(1);\
+        }
+#else
+    #define ASSERT(COND)
+#endif
+
 // definition of data types
 typedef struct
 {
@@ -32,6 +42,8 @@ static inline unsigned int GenerateRandomNumberLowerThan(
     unsigned int n // one above the maximum number to be randomly generated
 )
 {
+    ASSERT(n > 0);
+    
     return(rand() % n); // TODO: review since it is not distributed uniformly
     // note: rand() ranges in [0, RAND_MAX] and
     // (RAND_MAX + 1) is not necessarily a multiple of n
@@ -39,10 +51,14 @@ static inline unsigned int GenerateRandomNumberLowerThan(
 
 static inline void PrepareArrayOfCumulatedRecordWeights(
     int n,       // number of records
-    record_t *r, // array of records; assumed to be !=0
-    uint16_t *w  // array of cumulated record weights; assumed to be !=0
+    record_t *r, // array of records
+    uint16_t *w  // array of cumulated record weights
 )
 {
+    ASSERT(n > 0);
+    ASSERT(r != 0);
+    ASSERT(w != 0);
+    
     // r and w are assumed to be != 0
     int i;
     for(i = 0; i < n; i++) {
@@ -54,10 +70,13 @@ static inline void PrepareArrayOfCumulatedRecordWeights(
 }
 
 static inline unsigned int PickRandomRecordIndex(
-    int n,       // number of records; assumed to be >0
-    uint16_t *w  // array of cumulated record weights; assumed to be !=0
+    int n,       // number of records
+    uint16_t *w  // array of cumulated record weights
 )
 {
+    ASSERT(n > 0);
+    ASSERT(w != 0);
+    
     // declaration of local variables
     unsigned int r; // random number
     unsigned int picked; // flag indicating if a record has been picked
@@ -67,23 +86,20 @@ static inline unsigned int PickRandomRecordIndex(
     r = 1 + GenerateRandomNumberLowerThan(w[n - 1]);
     printf("r %d\n", r);
     
-    // pick the record index corresponding to the random number (binary search)
+    // pick the record index corresponding to the random number (like binary search)
     picked = 0;
     i_min = 0;
     i_max = n - 1;
-    i_mid = 0; // if n=0
-    do {
-        picked = (i_min > i_max);
-        if(!picked) {
-            i_mid = (i_min + i_max) >> 1;
-            if(r <= w[i_mid]) {
-                i_max = i_mid - 1;
-            }
-            else {
-                i_min = i_mid + 1;
-            }
+    while(!picked) {
+        i_mid = (i_min + i_max) >> 1;
+        if(r <= w[i_mid]) {
+            i_max = i_mid - 1;
+            picked = (r > w[i_max]);
         }
-    } while(!picked);
+        else {
+            i_min = i_mid + 1;
+        }
+    }
     
     return i_mid;
 }
@@ -115,6 +131,7 @@ int main() // TODO: add arguments 1. input file name and 2. number of iterations
     for(i = 0; i < m; i++) {
         dataset[PickRandomRecordIndex(n, cumWeights)].frequency++;
     }
+    
     for(i = 0; i < n; i++) {
         printf("w[%d]=%d, f[%d]=%d\n", i, cumWeights[i], i, dataset[i].frequency);
     }
