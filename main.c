@@ -38,15 +38,40 @@ static inline void InitializeRandomNumberGenerator()
     srand(time(0));
 }
 
+static inline uint8_t MostSignificantSetBit(
+    unsigned int word // reference word, whose MSb in [1-32] is returned
+                      // if 0 is returned, then word = 0
+)
+{
+    // declaration of local variables
+    uint8_t bit;
+    
+    // get the MSSB of the word, if it exists, in the range [1, 32]
+    for(bit = 32; (bit != 0) && ((word & (0x1 << (bit - 1))) == 0); bit--);
+    return(bit);
+}
+
 static inline unsigned int GenerateRandomNumberLowerThan(
     unsigned int n // one above the maximum number to be randomly generated
 )
 {
     ASSERT(n > 0);
     
-    return(rand() % n); // TODO: review since it is not distributed uniformly
-    // note: rand() ranges in [0, RAND_MAX] and
-    // (RAND_MAX + 1) is not necessarily a multiple of n
+    // declaration of local variables
+    static uint8_t maxRandMssb = 0;
+    uint64_t rand64;
+    
+    // this allows setting maxRandMssb once for all
+    if(maxRandMssb == 0) {
+        maxRandMssb = MostSignificantSetBit(RAND_MAX);
+    }
+    
+    // generate a random number lower than the given input limit
+    // keeping the uniform distribution
+    rand64 = rand();
+    rand64 *= n;
+    rand64 >>= maxRandMssb; // divided by (RAND_MAX + 1)
+    return((unsigned int)rand64);
 }
 
 static inline void PrepareArrayOfCumulatedRecordWeights(
@@ -59,8 +84,10 @@ static inline void PrepareArrayOfCumulatedRecordWeights(
     ASSERT(r != 0);
     ASSERT(w != 0);
     
-    // r and w are assumed to be != 0
+    // declaration of local variables
     int i;
+    
+    // fill in the array of cumulated record weights
     for(i = 0; i < n; i++) {
         w[i] = r[i].weight;
         if(i != 0) {
