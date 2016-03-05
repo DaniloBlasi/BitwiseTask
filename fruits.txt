@@ -1,0 +1,8 @@
+apple 10
+orange 15
+banana 25
+kiwifruit 18
+cranberry 35
+grape 24
+lemon 17
+pineapple 30

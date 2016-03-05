@@ -71,7 +71,8 @@ static inline int ParseArguments(
 // reads a file where a list of records is provided;
 // each record shall be written according to the following format: "<label> <weight>";
 // returns -1 if something with the reading goes wrongly, 0 otherwise;
-// the reading is truncated when the MAX_NUMBER_OF_RECORDS is read
+// the reading is truncated when the MAX_NUMBER_OF_RECORDS is read;
+// records with a null weight are skipped
 static inline int ReadFile(
     char *fname, // name of the input file with the list of records
     unsigned int *recs, // number of read records
@@ -97,8 +98,11 @@ static inline int ReadFile(
         (*recs < MAX_NUMBER_OF_RECORDS) &&
         (fscanf(fstream, "%s %u", recset[*recs].label, &(recset[*recs].weight)) != EOF)
     ) {
-        recset[*recs].frequency = 0;
-        *recs += 1;
+        // accept only records with a positive weight
+        if(recset[*recs].weight > 0) {
+            recset[*recs].frequency = 0;
+            *recs += 1;
+        }
     }
     fclose(fstream);
     
