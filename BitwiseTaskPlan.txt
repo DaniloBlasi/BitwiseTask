@@ -26,3 +26,14 @@ the total estimated time to complete the task is 22 hours, or roughly 15 days on
 
 Start date: Feb 29th, 2016
 End date:   Mar 16th, 2016
+==============================================================================================================
+Final review
+------------
+Task completed in 6 days, after having spent roughly 3 hours per day, tot. 18 hours
+(4 hours less than the former estimation).
+
+Main issues encountered:
+- Conflicts between the program running the code and the anti-virus protecting the own PC,
+  the later causing the former to be stuck at start in a neverending wait to continue working
+
+Release date: Mar 5th, 2016
