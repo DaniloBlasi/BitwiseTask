@@ -5,8 +5,8 @@
 #include <stdint.h>
 
 // definition of macros
-#define MAX_NUMBER_OF_RECORDS (20)
-#define MAX_RECORD_LABEL_SIZE (10)
+#define MAX_NUMBER_OF_RECORDS (30)
+#define MAX_RECORD_LABEL_SIZE (20)
 
 #ifdef DEBUG
     #define ASSERT(COND)\
