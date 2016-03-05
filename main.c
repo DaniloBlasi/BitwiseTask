@@ -27,12 +27,44 @@ typedef struct __attribute__((packed))
 } record_t;
 
 // declaration of function prototypes
+static inline int ParseArguments(unsigned int argc, char **argv, char **fname, unsigned int *iter);
 static inline void InitializeRandomNumberGenerator();
 static inline unsigned int GenerateRandomNumberLowerThan(unsigned int max);
 static inline void PrepareArrayOfCumulatedRecordWeights(unsigned int n, record_t *r, uint16_t *w);
 static inline unsigned int PickRandomRecordIndex(unsigned int n,  uint16_t *w);
 
 // definition of local functions called from a single point
+static inline int ParseArguments(
+    unsigned int argc, // count of arguments
+    char **argv, // argument (string) list
+    char **fname, // input file name, returned from parsing of the first argument
+    unsigned int *iter // number of iterations, returned from parsing of the second argument
+)
+{
+    ASSERT(argv != 0);
+    ASSERT(fname != 0);
+    ASSERT(iter != 0);
+    
+    // declaration of local variables
+    int ret;
+    
+    // parse arguments
+    if(argc < 3) {
+        printf("Incorrect number of arguments.\nPlease specify <file_name> and <number_of_iterations>.\n");
+        ret = -1;
+    }
+    else {
+        ASSERT(argv[1] != 0);
+        ASSERT(argv[2] != 0);
+        
+        *fname = argv[1];
+        *iter  = atoi(argv[2]);
+        ret = 0;
+    }
+    
+    return ret;
+}
+
 static inline void InitializeRandomNumberGenerator()
 {
     srand(time(0));
@@ -132,13 +164,14 @@ static inline unsigned int PickRandomRecordIndex(
 }
 
 // definition of the main function
-int main() // TODO: add arguments 1. input file name and 2. number of iterations
+int main(int argc, char **argv) // TODO: add arguments 1. input file name and 2. number of iterations
 {
     // declaration of local variables
-    unsigned int m = 100000; // number of iterations, got as a program's input
-    unsigned int n = 7; // number of records (>= 1), to be read from the input file
+    char *filename; // name of the input file, which the records have to be read from
+    unsigned int iterations; // number of iterations, got as a program's input
+    unsigned int records = 7; // number of records (>= 1), to be read from the input file
     unsigned int i; // array indexes
-    record_t dataset[MAX_NUMBER_OF_RECORDS] = {
+    record_t recordset[MAX_NUMBER_OF_RECORDS] = {
         {"red",    5, 0},
         {"orange", 3, 0},
         {"yellow", 2, 0},
@@ -149,22 +182,24 @@ int main() // TODO: add arguments 1. input file name and 2. number of iterations
     }; // array of records, to be read from the input file
     uint16_t cumWeights[MAX_NUMBER_OF_RECORDS]; // array of cumulated record weights
     
+    if(ParseArguments(argc, argv, &filename, &iterations) < 0) return(-1);
+    
     // initialization stuff
     InitializeRandomNumberGenerator();
-    PrepareArrayOfCumulatedRecordWeights(n, dataset, cumWeights);
+    PrepareArrayOfCumulatedRecordWeights(records, recordset, cumWeights);
     
     // loop up to the given number of iterations,
     // picking a random record and incrementing the related frequency
-    for(i = 0; i < m; i++) {
-        dataset[PickRandomRecordIndex(n, cumWeights)].frequency++;
+    for(i = 0; i < iterations; i++) {
+        recordset[PickRandomRecordIndex(records, cumWeights)].frequency++;
     }
     
-    for(i = 0; i < n; i++) {
+    for(i = 0; i < records; i++) {
         printf(
             "%s:\n- prob. %3d%%, freq. %3d%%\n",
-            dataset[i].label,
-            100 * dataset[i].weight / cumWeights[n - 1],
-            100 * dataset[i].frequency / m);
+            recordset[i].label,
+            100 * recordset[i].weight / cumWeights[records - 1],
+            100 * recordset[i].frequency / iterations);
     }
     
     return 0;
