@@ -1,0 +1,7 @@
+red 5
+orange 3
+yellow 2
+green 2
+blue 5
+indigo 6
+violet 4

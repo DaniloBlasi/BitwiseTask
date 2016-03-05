@@ -11,7 +11,7 @@
 #ifdef DEBUG
     #define ASSERT(COND)\
         if(!(COND)) {\
-            printf("Condition '" #COND "' is not met at line %d.\n", __LINE__);\
+            printf("Condition '" #COND "' is not met at line %u.\n", __LINE__);\
             while(1);\
         }
 #else
@@ -21,19 +21,25 @@
 // definition of data types
 typedef struct __attribute__((packed))
 {
-    char         label[MAX_RECORD_LABEL_SIZE]; // human readable label that allows identifying the record
-    uint8_t      weight;                       // number of copies of the record in a set of records
-    unsigned int frequency;                    // number of times the record is picked randomly
+    char         label[MAX_RECORD_LABEL_SIZE + 1]; // human readable label that allows identifying the record
+                                                   // (includes the final null character)
+    unsigned int weight;                           // number of copies of the record in a set of records
+    unsigned int frequency;                        // number of times the record is picked randomly
 } record_t;
 
 // declaration of function prototypes
 static inline int ParseArguments(unsigned int argc, char **argv, char **fname, unsigned int *iter);
+static inline int ReadFile(char *fname, unsigned int *recs, record_t *recset);
 static inline void InitializeRandomNumberGenerator();
+static inline unsigned int MostSignificantSetBit(unsigned int word);
 static inline unsigned int GenerateRandomNumberLowerThan(unsigned int max);
-static inline void PrepareArrayOfCumulatedRecordWeights(unsigned int n, record_t *r, uint16_t *w);
-static inline unsigned int PickRandomRecordIndex(unsigned int n,  uint16_t *w);
+static inline void PrepareArrayOfCumulatedRecordWeights(unsigned int n, record_t *r, unsigned int *w);
+static inline unsigned int PickRandomRecordIndex(unsigned int n, unsigned int *w);
 
 // definition of local functions called from a single point
+
+// parses the arguments passed to this program;
+// returns -1 if something goes wrongly, 0 otherwise
 static inline int ParseArguments(
     unsigned int argc, // count of arguments
     char **argv, // argument (string) list
@@ -41,56 +47,94 @@ static inline int ParseArguments(
     unsigned int *iter // number of iterations, returned from parsing of the second argument
 )
 {
+    // i/o parameters validity check (*)
     ASSERT(argv != 0);
     ASSERT(fname != 0);
     ASSERT(iter != 0);
-    
-    // declaration of local variables
-    int ret;
-    
+        
     // parse arguments
     if(argc < 3) {
         printf("Incorrect number of arguments.\nPlease specify <file_name> and <number_of_iterations>.\n");
-        ret = -1;
-    }
-    else {
-        ASSERT(argv[1] != 0);
-        ASSERT(argv[2] != 0);
-        
-        *fname = argv[1];
-        *iter  = atoi(argv[2]);
-        ret = 0;
+        return(-1);
     }
     
-    return ret;
+    // (*)
+    ASSERT(argv[1] != 0);
+    ASSERT(argv[2] != 0);
+    
+    *fname = argv[1];
+    *iter  = atoi(argv[2]);
+    
+    return 0;
 }
 
+// reads a file where a list of records is provided;
+// each record shall be written according to the following format: "<label> <weight>";
+// returns -1 if something with the reading goes wrongly, 0 otherwise;
+// the reading is truncated when the MAX_NUMBER_OF_RECORDS is read
+static inline int ReadFile(
+    char *fname, // name of the input file with the list of records
+    unsigned int *recs, // number of read records
+    record_t *recset // list of read records
+)
+{
+    // i/o parameters validity check
+    ASSERT(fname != 0);
+    ASSERT(recs != 0);
+    ASSERT(recset != 0);
+    
+    // declaration of local variables
+    FILE *fstream; // input file stream
+    
+    // read the input file
+    fstream = fopen(fname, "r");
+    if(fstream == NULL) {
+        printf("Cannot read the file '%s'.\nPlease verify the path name.\n", fname);
+        return(-1);
+    }
+    *recs = 0;
+    while(
+        (*recs < MAX_NUMBER_OF_RECORDS) &&
+        (fscanf(fstream, "%s %u", recset[*recs].label, &(recset[*recs].weight)) != EOF)
+    ) {
+        recset[*recs].frequency = 0;
+        *recs += 1;
+    }
+    fclose(fstream);
+    
+    return 0;
+}
+
+// initializes the generator of pseudo-random numbers with the current time
 static inline void InitializeRandomNumberGenerator()
 {
     srand(time(0));
 }
 
-static inline uint8_t MostSignificantSetBit(
-    unsigned int word // reference word, whose MSb in [1-32] is returned
-                      // if 0 is returned, then word = 0
+// returns the MSb set in a word, in the range [1, 32];
+// if 0 is returned, then the word is equal to 0
+static inline unsigned int MostSignificantSetBit(
+    unsigned int word // reference word
 )
 {
     // declaration of local variables
-    uint8_t bit;
+    unsigned int bit;
     
     // get the MSSB of the word, if it exists, in the range [1, 32]
     for(bit = 32; (bit != 0) && ((word & (0x1 << (bit - 1))) == 0); bit--);
     return(bit);
 }
 
+// generates a positive random number, strictly lower than a given number
 static inline unsigned int GenerateRandomNumberLowerThan(
     unsigned int n // one above the maximum number to be randomly generated
 )
 {
+    // i/o parameters validity check
     ASSERT(n > 0);
     
     // declaration of local variables
-    static uint8_t maxRandMssb = 0;
+    static unsigned int maxRandMssb = 0;
     uint64_t rand64;
     
     // this allows setting maxRandMssb once for all
@@ -106,12 +150,14 @@ static inline unsigned int GenerateRandomNumberLowerThan(
     return((unsigned int)rand64);
 }
 
+// fills in an array of cumulated record weights
 static inline void PrepareArrayOfCumulatedRecordWeights(
     unsigned int n, // number of records
     record_t *r,    // array of records
-    uint16_t *w     // array of cumulated record weights
+    unsigned int *w     // array of cumulated record weights
 )
 {
+    // i/o parameters validity check
     ASSERT(n > 0);
     ASSERT(r != 0);
     ASSERT(w != 0);
@@ -128,11 +174,14 @@ static inline void PrepareArrayOfCumulatedRecordWeights(
     }
 }
 
+// picks a random index of an array of records,
+// given an associated array of cumulated record weights
 static inline unsigned int PickRandomRecordIndex(
     unsigned int n, // number of records
-    uint16_t *w     // array of cumulated record weights
+    unsigned int *w     // array of cumulated record weights
 )
 {
+    // i/o parameters validity check
     ASSERT(n > 0);
     ASSERT(w != 0);
     
@@ -150,12 +199,16 @@ static inline unsigned int PickRandomRecordIndex(
         i_mid = (i_min + i_max) >> 1;
         if(r <= w[i_mid]) {
             // check the lower limit, to avoid segmentation fault
-            if(i_mid == 0) break;
+            if(i_mid == 0) {
+                break;
+            }
             i_max = i_mid - 1;
         }
         else {
             // check the higher limit, to avoid segmentation fault
-            if(i_mid == (n - 1)) break;
+            if(i_mid == (n - 1)) {
+                break;
+            }
             i_min = i_mid + 1;
         }
     } while(r <= w[i_max]);
@@ -169,20 +222,17 @@ int main(int argc, char **argv) // TODO: add arguments 1. input file name and 2.
     // declaration of local variables
     char *filename; // name of the input file, which the records have to be read from
     unsigned int iterations; // number of iterations, got as a program's input
-    unsigned int records = 7; // number of records (>= 1), to be read from the input file
+    unsigned int records; // number of records (>= 1), to be read from the input file
     unsigned int i; // array indexes
-    record_t recordset[MAX_NUMBER_OF_RECORDS] = {
-        {"red",    5, 0},
-        {"orange", 3, 0},
-        {"yellow", 2, 0},
-        {"green",  2, 0},
-        {"blue",   5, 0},
-        {"indigo", 6, 0},
-        {"violet", 4, 0}
-    }; // array of records, to be read from the input file
-    uint16_t cumWeights[MAX_NUMBER_OF_RECORDS]; // array of cumulated record weights
+    record_t recordset[MAX_NUMBER_OF_RECORDS]; // array of records, to be read from the input file
+    unsigned int cumWeights[MAX_NUMBER_OF_RECORDS]; // array of cumulated record weights
     
-    if(ParseArguments(argc, argv, &filename, &iterations) < 0) return(-1);
+    if(ParseArguments(argc, argv, &filename, &iterations) < 0) {
+        return(-1);
+    }
+    if(ReadFile(filename, &records, recordset) < 0) {
+        return(-1);
+    }
     
     // initialization stuff
     InitializeRandomNumberGenerator();
@@ -194,9 +244,10 @@ int main(int argc, char **argv) // TODO: add arguments 1. input file name and 2.
         recordset[PickRandomRecordIndex(records, cumWeights)].frequency++;
     }
     
+    // show the statistics on the stdout
     for(i = 0; i < records; i++) {
         printf(
-            "%s:\n- prob. %3d%%, freq. %3d%%\n",
+            "%s:\n- prob. %3u%%, freq. %3u%%\n",
             recordset[i].label,
             100 * recordset[i].weight / cumWeights[records - 1],
             100 * recordset[i].frequency / iterations);
