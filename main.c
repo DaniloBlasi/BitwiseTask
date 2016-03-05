@@ -19,18 +19,18 @@
 #endif
 
 // definition of data types
-typedef struct
+typedef struct __attribute__((packed))
 {
-    char    label[MAX_RECORD_LABEL_SIZE]; // human readable label that allows identifying the record
-    uint8_t weight;                       // number of copies of the record in a set of records
-    uint8_t frequency;                    // number of times the record is picked randomly
+    char         label[MAX_RECORD_LABEL_SIZE]; // human readable label that allows identifying the record
+    uint8_t      weight;                       // number of copies of the record in a set of records
+    unsigned int frequency;                    // number of times the record is picked randomly
 } record_t;
 
 // declaration of function prototypes
 static inline void InitializeRandomNumberGenerator();
 static inline unsigned int GenerateRandomNumberLowerThan(unsigned int max);
-static inline void PrepareArrayOfCumulatedRecordWeights(int n, record_t *r, uint16_t *w);
-static inline unsigned int PickRandomRecordIndex(int n,  uint16_t *w);
+static inline void PrepareArrayOfCumulatedRecordWeights(unsigned int n, record_t *r, uint16_t *w);
+static inline unsigned int PickRandomRecordIndex(unsigned int n,  uint16_t *w);
 
 // definition of local functions called from a single point
 static inline void InitializeRandomNumberGenerator()
@@ -75,9 +75,9 @@ static inline unsigned int GenerateRandomNumberLowerThan(
 }
 
 static inline void PrepareArrayOfCumulatedRecordWeights(
-    int n,       // number of records
-    record_t *r, // array of records
-    uint16_t *w  // array of cumulated record weights
+    unsigned int n, // number of records
+    record_t *r,    // array of records
+    uint16_t *w     // array of cumulated record weights
 )
 {
     ASSERT(n > 0);
@@ -85,7 +85,7 @@ static inline void PrepareArrayOfCumulatedRecordWeights(
     ASSERT(w != 0);
     
     // declaration of local variables
-    int i;
+    unsigned int i;
     
     // fill in the array of cumulated record weights
     for(i = 0; i < n; i++) {
@@ -97,8 +97,8 @@ static inline void PrepareArrayOfCumulatedRecordWeights(
 }
 
 static inline unsigned int PickRandomRecordIndex(
-    int n,       // number of records
-    uint16_t *w  // array of cumulated record weights
+    unsigned int n, // number of records
+    uint16_t *w     // array of cumulated record weights
 )
 {
     ASSERT(n > 0);
@@ -106,27 +106,27 @@ static inline unsigned int PickRandomRecordIndex(
     
     // declaration of local variables
     unsigned int r; // random number
-    unsigned int picked; // flag indicating if a record has been picked
     unsigned int i_min, i_max, i_mid; // array indexes
     
     // generate a random number between 1 and the sum of all the record weights
     r = 1 + GenerateRandomNumberLowerThan(w[n - 1]);
-    printf("r %d\n", r);
     
     // pick the record index corresponding to the random number (like binary search)
-    picked = 0;
     i_min = 0;
     i_max = n - 1;
-    while(!picked) {
+    do {
         i_mid = (i_min + i_max) >> 1;
         if(r <= w[i_mid]) {
+            // check the lower limit, to avoid segmentation fault
+            if(i_mid == 0) break;
             i_max = i_mid - 1;
-            picked = (r > w[i_max]);
         }
         else {
+            // check the higher limit, to avoid segmentation fault
+            if(i_mid == (n - 1)) break;
             i_min = i_mid + 1;
         }
-    }
+    } while(r <= w[i_max]);
     
     return i_mid;
 }
@@ -135,7 +135,7 @@ static inline unsigned int PickRandomRecordIndex(
 int main() // TODO: add arguments 1. input file name and 2. number of iterations
 {
     // declaration of local variables
-    unsigned int m = 1; // number of iterations, got as a program's input
+    unsigned int m = 100000; // number of iterations, got as a program's input
     unsigned int n = 7; // number of records (>= 1), to be read from the input file
     unsigned int i; // array indexes
     record_t dataset[MAX_NUMBER_OF_RECORDS] = {
@@ -160,7 +160,11 @@ int main() // TODO: add arguments 1. input file name and 2. number of iterations
     }
     
     for(i = 0; i < n; i++) {
-        printf("w[%d]=%d, f[%d]=%d\n", i, cumWeights[i], i, dataset[i].frequency);
+        printf(
+            "%s:\n- prob. %3d%%, freq. %3d%%\n",
+            dataset[i].label,
+            100 * dataset[i].weight / cumWeights[n - 1],
+            100 * dataset[i].frequency / m);
     }
     
     return 0;
